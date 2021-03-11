@@ -2,6 +2,10 @@
 
 `kata` 相识自《代码整洁之道》，这里指每日用于上手的题目。
 
+# 依赖
+
+- python3
+
 # 使用
 
 ```shell
@@ -23,3 +27,4 @@ command [add|take|rm|show|quit] : [operation]
   - 展示所有题目
 - quit
   - 退出程序
+
