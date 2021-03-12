@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-#! coding: utf-8
+# coding: utf-8
 
 import os.path
 import json
@@ -55,6 +55,14 @@ def take():
         pt(rd)
 
 
+def find():
+    k = input('name: ')
+    dt = load()['data']
+    for it in dt:
+        if k in it['name']:
+            pt(it)
+
+
 def remove():
     name = input('name: ').strip()
     og = load()
@@ -81,11 +89,13 @@ def show():
 
 if __name__ == "__main__":
     while True:
-        op = input('command [add|take|rm|show|quit] : ').strip()
+        op = input('command [add|take|find|rm|show|quit] : ').strip()
         if op == 'exit' or op == 'quit' or op == 'q':
             break
         elif op == 'add':
             add()
+        elif op == 'find':
+            find()
         elif op == 'take' or op == 'tk':
             take()
         elif op == 'remove' or op == 'rm':
