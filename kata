@@ -4,103 +4,143 @@
 import os.path
 import json
 import random
+import uuid
 
 DATA_FILE = 'data.json'
 
 
-def load():
-    if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
-        with open(DATA_FILE, 'w+') as f:
-            f.write('{ "data": [] }')
+class Problem:
+    def __init__(self, uid: str, name: str = '', tags: list[str] = None, desc: str = ''):
+        self.uid = uid
+        self.name = name
+        self.desc = desc
+        if tags is None:
+            self.tags = []
+        else:
+            self.tags = tags
 
-    with open(DATA_FILE, 'r') as f:
-        dt = json.load(f)
-        if 'data' not in dt:
-            dt['data'] = []
+    @classmethod
+    def parse(cls, d):
+        return Problem(d.get('uid', ''), d.get('name', ''), d.get('tags', []), d['desc'])
+
+    def to_dict(self):
+        return {
+            'uid': self.uid,
+            'name': self.name,
+            'desc': self.desc,
+            'tags': self.tags
+        }
+
+    def prt(self):
+        print(self.uid, self.name)
+        if self.tags:
+            print(' '.join(self.tags))
+        print('#' * 5)
+        print(self.desc)
+
+
+class ProblemManager:
+    def __init__(self, data_file: str = 'data.json'):
+        self.data_file = data_file
+        self.problems: list[Problem] = []
+        self.data = {}
+        # load from local file
+        self.load()
+
+    @classmethod
+    def sign(cls):
+        return str(random.randint(0, 1000000000))
+
+    def load(self):
+        if not os.path.exists(self.data_file) or os.path.getsize(self.data_file) == 0:
+            with open(self.data_file, 'w+') as f:
+                f.write('{ "data": [] }')
+
+        with open(self.data_file, 'r') as f:
+            dt = json.load(f)
+            if 'data' not in dt:
+                dt['data'] = []
+            for item in dt['data']:
+                p = Problem.parse(item)
+                if not p.uid:
+                    p.uid = self.sign()
+                self.problems.append(p)
+            self.data = dt
+
+    def sink(self):
+        problems = [p.to_dict() for p in self.problems]
+        self.data['data'] = problems
+        with open(self.data_file, 'w+') as f:
+            json.dump(self.data, f, indent=4, ensure_ascii=False)
+
+    @classmethod
+    def ipt(cls, tips: str):
+        dt = input('{}: '.format(tips)).strip()
         return dt
 
+    def add(self):
+        name = self.ipt('name')
+        tags = self.ipt('tags')
+        desc = []
+        print('desc: ', end='')
+        while True:
+            ip = input().strip()
+            if '...' == ip:
+                break
+            desc.append(ip)
+        self.problems.append(Problem(self.sign(), name, tags.split(' '), '\n'.join(desc)))
 
-def sink(dt):
-    with open(DATA_FILE, 'w+') as f:
-        json.dump(dt, f, indent=4, ensure_ascii=False)
-
-
-def pt(rd):
-    print(rd['name'])
-    print('#' * 5)
-    print(rd['desc'])
-
-
-def add():
-    name = input('name: ').strip()
-    desc = []
-    print('desc: ', end='')
-    while True:
-        ip = input().strip()
-        if '...' == ip:
-            break
-        desc.append(ip)
-    dt = load()
-    dt['data'].append({'name': name, 'desc': '\n'.join(desc)})
-    sink(dt)
-
-
-def take():
-    dt = load()['data']
-    if len(dt) == 0:
-        print('no candidate')
-    else:
-        ro = random.randint(0, len(dt) - 1)
-        rd = dt[ro]
-        pt(rd)
-
-
-def find():
-    k = input('name: ')
-    dt = load()['data']
-    for it in dt:
-        if k in it['name']:
-            pt(it)
-
-
-def remove():
-    name = input('name: ').strip()
-    og = load()
-    dt = og['data']
-    tr = []
-    for i in dt:
-        if 'name' in i and i['name'] == name:
-            tr.append(i)
-    for i in tr:
-        dt.remove(i)
-    sink(og)
-
-
-def show():
-    dt = load()['data']
-    flag = True
-    for rd in dt:
-        if flag:
-            flag = False
+    def take(self):
+        if len(self.problems) == 0:
+            print('no candidate')
         else:
-            print('\n', '-' * 50, end='\n\n', sep='')
-        pt(rd)
+            ro = random.randint(0, len(self.problems) - 1)
+            rd = self.problems[ro]
+            rd.prt()
+
+    def find(self):
+        name = self.ipt('name')
+        for it in self.problems:
+            if name in it.name:
+                print(it.uid, it.name)
+
+    def remove(self):
+        name = self.ipt('name')
+        tr = []
+        for i in self.problems:
+            if i.name != name:
+                tr.append(i)
+        self.problems = tr
+
+    def show(self):
+        flag = True
+        for rd in self.problems:
+            if flag:
+                flag = False
+            else:
+                print('\n', '-' * 50, end='\n\n', sep='')
+            rd.prt()
+
+    def menu(self):
+        while True:
+            op = input('command [add|take|find|rm|show|quit]: ').strip()
+            if op == 'exit' or op == 'quit' or op == 'q':
+                break
+            elif op == 'add':
+                self.add()
+            elif op == 'find':
+                self.find()
+            elif op == 'take' or op == 'tk':
+                self.take()
+            elif op == 'remove' or op == 'rm':
+                self.remove()
+            elif op == 'show' or op == 'll':
+                self.show()
+            else:
+                print('unknown operation', op)
 
 
 if __name__ == "__main__":
-    while True:
-        op = input('command [add|take|find|rm|show|quit] : ').strip()
-        if op == 'exit' or op == 'quit' or op == 'q':
-            break
-        elif op == 'add':
-            add()
-        elif op == 'find':
-            find()
-        elif op == 'take' or op == 'tk':
-            take()
-        elif op == 'remove' or op == 'rm':
-            remove()
-        elif op == 'show' or op == 'll':
-            show()
-        else:
-            print('unkown operation', op)
+    pm = ProblemManager(DATA_FILE)
+    pm.menu()
+    pm.sink()
